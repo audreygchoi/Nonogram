@@ -1,6 +1,7 @@
 package nonogram
 
-import java.util.Stack
+import scala.collection.mutable.Stack
+import scala.io.Source
 import scala.util.control.Breaks._
 
 object Mark extends Enumeration {
@@ -112,19 +113,21 @@ class BoardState(numrows: Int, numcols: Int, rowclues: Array[Stack[Int]], colclu
 	  return false
 	}
 	
-//	def solve(board:Board):Board = {
-//	  if (hasContradictions(board)) return board
-//	  if (board.isFull) return board
-//	  for (guess <- generateGuesses(board)) {
-//	    solve(guess)
-//	  }
-//	}
+	def nextGuess(board:Board):Board = {
+	  var guessingRow = numRows - 1
+	  for(i <- 0 until numRows) {
+	    if(board.getMark(i, 0) == Mark.unknown) {
+	      guessingRow = i - 1
+	      break
+	    }
+	  }
+	  return board
+	}
+	
+	def solve(board:Board):Board = {
+	  if (hasContradictions(board)) return null
+	  if (board.isFull) return board
+	  solve(nextGuess(board))
+	}
 }
 
-object Main {
-  def main(args: Array[String]) {
-    val testBoard = new Board(5,5)
-    testBoard.makeMark(0, 2, Mark.filled )
-    testBoard.printBoard
-  }
-}
