@@ -1,12 +1,19 @@
 package nonogram
 
-import scala.collection.mutable.Stack
 import scala.io.Source
 
 object Main {
   def main(args: Array[String]) {
-    val testBoard = new Board(5,5)
-    testBoard.makeMark(0, 2, Mark.filled )
+    val testBoard = new Board(3,3)
+    testBoard.makeMark(0, 0, Mark.blank )
+    testBoard.makeMark(0, 1, Mark.filled )
+    testBoard.makeMark(0, 2, Mark.blank )
+//    testBoard.makeMark(1, 0, Mark.filled )
+//    testBoard.makeMark(1, 1, Mark.blank )
+//    testBoard.makeMark(1, 2, Mark.filled )
+//    testBoard.makeMark(2, 0, Mark.blank )
+//    testBoard.makeMark(2, 1, Mark.filled )
+//    testBoard.makeMark(2, 2, Mark.blank )
     testBoard.printBoard
     
     //	3 by 3 Board
@@ -16,10 +23,21 @@ object Main {
     //  1 1 1 
     //	  1
     
-    var RowClues: Array[Stack[Int]] = Array(Stack(1), Stack(1,1), Stack(1))
-    var ColClues: Array[Stack[Int]] = Array(Stack(1), Stack(1,1), Stack(1))
+    var rowClues: Array[List[Int]] = Array(List(1), List(1,1), List(1))
+    var colClues: Array[List[Int]] = Array(List(1), List(1,1), List(1))
     var numCols: Int = 3
     var numRows: Int = 3
+    var testState: BoardState = new BoardState(numRows, numCols, rowClues, colClues)
+    for(mark <- testState.firstGuess(rowClues(1))) {
+      mark match {
+        case Mark.unknown =>
+		        print("?")
+		      case Mark.blank =>
+		        print("_")
+		      case Mark.filled =>
+		        print("X")
+      }
+    }
 	    
     //	5 by 5 Board
 	//  X X X _ _ 3
@@ -30,10 +48,11 @@ object Main {
     //	1 1 3 3 3
     //	  1 1
     
-    RowClues = Array(Stack(3), Stack(1), Stack(3), Stack(2), Stack(4))
-    ColClues = Array(Stack(1), Stack(1,1), Stack(3,1), Stack(3), Stack(3))
+    rowClues = Array(List(3), List(1), List(3), List(2), List(4))
+    colClues = Array(List(1), List(1,1), List(3,1), List(3), List(3))
     numCols = 5
     numRows = 5
+    testState = new BoardState(numRows, numCols, rowClues, colClues)
     
     //	10 by 11 Board
 	//  _ _ _ _ _ _ _ X _ X X 1 2
@@ -49,13 +68,13 @@ object Main {
     //	2 3 1 2 5 4 4 1 1 2 2
     //	      1     1 5 2   1
     //
-    RowClues = Array(Stack(1,2), Stack(2), Stack(1), Stack(1), Stack(2),
-        Stack(2,4), Stack(2,6), Stack(8), Stack(1,1), Stack(2,2))
-    ColClues = Array(Stack(2), Stack(3), Stack(1), Stack(2,1), Stack(5),
-        Stack(4), Stack(4,1), Stack(1,5), Stack(1,2), Stack(2), Stack(2,1))
+    rowClues = Array(List(1,2), List(2), List(1), List(1), List(2),
+        List(2,4), List(2,6), List(8), List(1,1), List(2,2))
+    colClues = Array(List(2), List(3), List(1), List(2,1), List(5),
+        List(4), List(4,1), List(1,5), List(1,2), List(2), List(2,1))
     numCols = 11
-    numRows = 5
-
+    numRows = 10
+    testState = new BoardState(numRows, numCols, rowClues, colClues)
     
     
   }

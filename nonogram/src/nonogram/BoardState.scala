@@ -75,21 +75,24 @@ class Board(numrows: Int, numcols: Int) {
 	}
 }
 
-class BoardState(numrows: Int, numcols: Int, rowclues: Array[Stack[Int]], colclues: Array[Stack[Int]]){
-	val numRows = numrows
-	val numCols = numcols
-	//right to left top to bottom
-	val rowClues: Array[Stack[Int]] = rowclues
-	val colClues: Array[Stack[Int]] = colclues
-	val board = new Board(numrows, numcols)
+class BoardState(numRows: Int, numCols: Int, rowClues: Array[List[Int]], colClues: Array[List[Int]]){
+	val board = new Board(numRows, numCols)
 	
-	def hasContradictions(board:Board):Boolean = {
+	def hasContradictions(b:Board):Boolean = {
 	  for(j <- 0 until numCols) {
 	    var listOfClues = colClues(j)
-	    var currentClue = listOfClues.pop
+	    var currentClue = 0
+	    listOfClues match {
+	      case h::t => {
+	        currentClue = h
+	        listOfClues = t
+	      }
+	      case nil => {}
+	    }
         var counter = 0
+        var remainingSlots = 0
 	    for(i <- 0 until numRows) {
-	      board.getMark(i,j) match {
+	      b.getMark(i,j) match {
 		    case Mark.filled =>
 		      {
 		        counter += 1
@@ -97,36 +100,98 @@ class BoardState(numrows: Int, numcols: Int, rowclues: Array[Stack[Int]], colclu
 		      }
 		      case Mark.blank => {
 		        if(counter == currentClue) {
-		          currentClue = listOfClues.pop
-		          counter = 0
+		        	currentClue = 0
+		        	listOfClues match {
+		        		case h::t => {
+		        			currentClue = h
+		        			listOfClues = t
+		        		}
+		        		case nil => {}
+		        	}
+		        	counter = 0
 		        }
 		        else if(counter < currentClue && counter != 0) return true //this has a contradiction
 		        //don't have to deal with the counter > currentClue case, because that is taken care of in case Mark.filled
 		      }
 		      case Mark.unknown =>
-		        break
+		        if(remainingSlots == 0) remainingSlots = numRows - i
 		        //we've reached the end of our guesses for this column
 		        //if we haven't yet found a contradiction in this column, then there's none to find
 		    }
 	    }
+        //if we have clues left over at the end, sum them up and check them against our remainingSlots
+        if(!listOfClues.isEmpty) {
+          var sum: Int = 0
+          for (clue <- listOfClues) {
+            sum = sum + 1 + clue
+          }
+          sum -= 1
+          if(sum > remainingSlots) return true
+        }
 	  }
 	  return false
 	}
 	
-	def nextGuess(board:Board):Board = {
-	  var guessingRow = numRows - 1
-	  for(i <- 0 until numRows) {
-	    if(board.getMark(i, 0) == Mark.unknown) {
-	      guessingRow = i - 1
-	      break
+	//needs testing
+	def isLastGuessRow(row:Array[Mark.Value], cluesList:List[Int]): Boolean = {
+	  var lastIndex = numCols - 1
+	  var clueList = cluesList.reverse
+	  for(clue <- clueList) {
+	    for(i <- 0 until clue) {
+	      if(row(lastIndex) != Mark.filled) return false
+	      lastIndex -= 1
 	    }
+	    if(lastIndex < numCols) {
+	      if(row(lastIndex) != Mark.blank) return false 
+	      lastIndex -= 1
+	    }
+	  }
+	  return true
+	}
+	
+	def firstGuess(cluesList:List[Int]): Array[Mark.Value] = {
+	  var guessRow:Array[Mark.Value] = new Array[Mark.Value](numCols)
+	  var lastIndex = 0
+	  for(clue <- cluesList) {
+	    for(i <- 0 until clue) {
+	      guessRow(lastIndex) = Mark.filled
+	      lastIndex += 1
+	    }
+	    if(lastIndex < numCols) {
+	      guessRow(lastIndex) = Mark.blank 
+	      lastIndex += 1
+	    }
+	  }
+	  for(i <- lastIndex until numCols) {
+	    guessRow(i) = Mark.blank
+	  }
+	  return guessRow
+	}
+	
+	
+	def nextGuessRow(board:Board, rowNum:Int):Board = {
+	  //if we're over, something terribly wrong has happened
+	  if(rowNum >= numRows) return new Board(numRows, numCols)
+	  
+	  var row:Array[Mark.Value] = board.board(rowNum)
+	  var cluesList:List[Int] = rowClues(rowNum)
+	  if(isLastGuessRow(row, cluesList)) {
+	    board.board(rowNum) = firstGuess(cluesList)
+	    nextGuessRow(board, rowNum + 1)
+	  } else {
+	    //TODO
+	    //go clue by clue? treat them in the same 
+	    //doincrement
 	  }
 	  return board
 	}
 	
+	def nextGuess(board:Board):Board = {
+	  return nextGuessRow(board, 0)
+	}
+	
 	def solve(board:Board):Board = {
-	  if (hasContradictions(board)) return null
-	  if (board.isFull) return board
+	  if (!hasContradictions(board)) return board
 	  solve(nextGuess(board))
 	}
 }
