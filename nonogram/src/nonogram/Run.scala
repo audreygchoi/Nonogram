@@ -28,16 +28,7 @@ object Main {
     var numCols: Int = 3
     var numRows: Int = 3
     var testState: BoardState = new BoardState(numRows, numCols, rowClues, colClues)
-    for(mark <- testState.firstGuess(rowClues(1))) {
-      mark match {
-        case Mark.unknown =>
-		        print("?")
-		      case Mark.blank =>
-		        print("_")
-		      case Mark.filled =>
-		        print("X")
-      }
-    }
+    println(testState.firstGuess(rowClues(1)))
 	    
     //	5 by 5 Board
 	//  X X X _ _ 3
