@@ -14,7 +14,7 @@ object Main {
 //    testBoard.makeMark(2, 0, Mark.blank )
 //    testBoard.makeMark(2, 1, Mark.filled )
 //    testBoard.makeMark(2, 2, Mark.blank )
-    testBoard.printBoard
+    //testBoard.printBoard
     
     //	3 by 3 Board
 	//  _ X _ 1
@@ -28,7 +28,7 @@ object Main {
     var numCols: Int = 3
     var numRows: Int = 3
     var testState: BoardState = new BoardState(numRows, numCols, rowClues, colClues)
-    println(testState.firstGuess(rowClues(1)))
+    //testState.solve().printBoard
 	    
     //	5 by 5 Board
 	//  X X X _ _ 3
@@ -44,6 +44,7 @@ object Main {
     numCols = 5
     numRows = 5
     testState = new BoardState(numRows, numCols, rowClues, colClues)
+    //testState.solve().printBoard
     
     //	10 by 11 Board
 	//  _ _ _ _ _ _ _ X _ X X 1 2
@@ -66,7 +67,7 @@ object Main {
     numCols = 11
     numRows = 10
     testState = new BoardState(numRows, numCols, rowClues, colClues)
-    
+    testState.solve().printBoard
     
   }
 }

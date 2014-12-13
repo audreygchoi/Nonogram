@@ -4,6 +4,7 @@ import scala.collection.mutable.Stack
 import scala.io.Source
 import scala.util.control.Breaks._
 
+
 object Mark extends Enumeration {
   val unknown, blank, filled = Value
 }
@@ -78,6 +79,20 @@ class Board(numrows: Int, numcols: Int) {
 class BoardState(numRows: Int, numCols: Int, rowClues: Array[List[Int]], colClues: Array[List[Int]]){
 	val board = new Board(numRows, numCols)
 	
+	//this is just for testing
+	def rowPrint(row:Array[Mark.Value]) = {
+	  for (j <- 0 until numCols) {
+		    row(j) match {
+		      case Mark.unknown =>
+		        print("?")
+		      case Mark.blank =>
+		        print("_")
+		      case Mark.filled =>
+		        print("X")
+		    }
+	  }
+	}
+	
 	def hasContradictions(b:Board):Boolean = {
 	  for(j <- 0 until numCols) {
 	    var listOfClues = colClues(j)
@@ -132,16 +147,18 @@ class BoardState(numRows: Int, numCols: Int, rowClues: Array[List[Int]], colClue
 	  return false
 	}
 	
-	//needs testing
-	def isLastGuessRow(row:Array[Mark.Value], cluesList:List[Int]): Boolean = {
+	def isLastGuessRow(row:Array[Mark.Value], cluesList:List[Int]): Boolean = { 
 	  var lastIndex = numCols - 1
+	  //we're going to traverse right to left, which is why we're flipping the clues list
 	  var clueList = cluesList.reverse
+	  //if there are no clues, this will always return true
 	  for(clue <- clueList) {
 	    for(i <- 0 until clue) {
 	      if(row(lastIndex) != Mark.filled) return false
 	      lastIndex -= 1
 	    }
-	    if(lastIndex < numCols) {
+	    //if we've still got space left in the row, have to make sure that there's a blank space between clues
+	    if(lastIndex >= 0) {
 	      if(row(lastIndex) != Mark.blank) return false 
 	      lastIndex -= 1
 	    }
@@ -149,6 +166,7 @@ class BoardState(numRows: Int, numCols: Int, rowClues: Array[List[Int]], colClue
 	  return true
 	}
 	
+	//needs editing
 	def firstGuess(cluesList:List[Int]): Array[Mark.Value] = {
 	  var guessRow:Array[Mark.Value] = new Array[Mark.Value](numCols)
 	  var lastIndex = 0
@@ -168,7 +186,7 @@ class BoardState(numRows: Int, numCols: Int, rowClues: Array[List[Int]], colClue
 	  return guessRow
 	}
 	
-	
+	//NEEDS TESTING
 	def nextGuessRow(board:Board, rowNum:Int):Board = {
 	  //if we're over, something terribly wrong has happened
 	  if(rowNum >= numRows) return new Board(numRows, numCols)
@@ -179,9 +197,63 @@ class BoardState(numRows: Int, numCols: Int, rowClues: Array[List[Int]], colClue
 	    board.board(rowNum) = firstGuess(cluesList)
 	    nextGuessRow(board, rowNum + 1)
 	  } else {
-	    //TODO
-	    //go clue by clue? treat them in the same 
-	    //doincrement
+	      var changeIndices:Stack[Int] = new Stack[Int]
+	      var justSawFilled = false
+	      var incrementThis = false
+	      var end = false
+	      //i represents the index of the current cell *when right indexed*, we're traversing from right to left
+	      for(i <- 0 until numCols) {
+	        if(!end) {
+	    	  var currentCell = row(numCols - 1 - i)
+			  //if we see two blank cells in a row, then the next clue is the clue to be incremented
+			  if(!justSawFilled && currentCell == Mark.blank) {
+				  incrementThis = true
+			  }
+	    	  //if we see a filled cell after seeing a blank cell, then we're seeing the beginning of a clue, mark this index
+	    	  if(!justSawFilled && currentCell == Mark.filled) {
+	    		  changeIndices.push(i)
+	    		  justSawFilled = true
+	    	  }
+	    	  //if we see a blank cell after seeing a filled cell, that's the end of the clue
+	    	  if(justSawFilled && currentCell == Mark.blank) {
+	    		  justSawFilled = false
+				  changeIndices.push(i)
+				  //if this is the case, then this is the end of the last clue, and we can skip doing anything else
+				  if(incrementThis) end = true
+	    	  }
+	      }
+	      }
+	      //this means the last cell in the row was filled
+	      if(justSawFilled) changeIndices.push(numCols)
+	      
+	      //first we erase the left side of the clue
+	      row(numCols - changeIndices.pop) = Mark.blank
+	      //then we fill in the right side
+	      var editingIndex = numCols - changeIndices.pop
+	      row(editingIndex) = Mark.filled 
+	      
+	      //and reset the relevant clues from there, note that we just edited editingIndex
+	      while(!changeIndices.isEmpty) {
+	        //add a blank space between clues!
+	        editingIndex += 1
+	        row(editingIndex) = Mark.blank 
+	        
+	        //we can determine how big this clue is easily based on our stack
+	        var size = changeIndices.pop - changeIndices.pop
+	        for(i <- 0 until size) {
+	          editingIndex += 1
+	          //if(editingIndex >= numCols) println("Editing index" + editingIndex + " with numCols " + numCols + " while guessing on rowNum " + rowNum)
+	          row(editingIndex) = Mark.filled
+	        }
+	      }
+	      
+	      //blank the remainder
+	      editingIndex += 1
+	      for(i <- editingIndex until numCols) {
+	        row(i) = Mark.blank 
+	      }
+	    
+	    board.board(rowNum) = row
 	  }
 	  return board
 	}
@@ -190,9 +262,22 @@ class BoardState(numRows: Int, numCols: Int, rowClues: Array[List[Int]], colClue
 	  return nextGuessRow(board, 0)
 	}
 	
-	def solve(board:Board):Board = {
-	  if (!hasContradictions(board)) return board
-	  solve(nextGuess(board))
+	def recursiveSolve(board:Board):Board = {
+	  var copyBoard = board
+	  while(hasContradictions(copyBoard)) {
+	    copyBoard.printBoard
+	    println("Not this^ one")
+	    copyBoard = nextGuess(copyBoard)
+	  }
+	  return copyBoard
+	}
+	
+	def solve():Board = {
+	  var board = new Board(numRows, numCols)
+	  for(i <- 0 until numRows) {
+	    board.board(i) = firstGuess(rowClues(i))
+	  }
+	  return recursiveSolve(board)
 	}
 }
 
